@@ -1,0 +1,23 @@
+# Snow-Town Decision Log
+
+## 2026-02-07: JSONL as source of truth, SQLite as query layer
+**Context:** Need persistent storage for the three contract types flowing between layers.
+**Decision:** JSONL files are append-only source of truth (git-tracked). SQLite provides indexed queries but is rebuildable from JSONL at any time.
+**Rationale:** JSONL is human-readable, diffable, and naturally append-only. SQLite adds query flexibility without being the authoritative store. If SQLite corrupts, rebuild from JSONL.
+**Trade-offs:** Slightly slower reads (parse JSON per line) vs. simplicity and auditability.
+
+## 2026-02-07: Contracts defined in snow-town, imported via sys.path
+**Context:** Three projects (UM, SL, Academy) need access to the same contract definitions.
+**Decision:** Contracts live in `snow-town/contracts/` and are imported by other projects via `sys.path.insert(0, snow_town_path)`.
+**Rationale:** Avoids publishing a package to PyPI or maintaining a private registry. All projects run on the same EC2 instance. Simple path import works reliably.
+**Trade-offs:** Not distributable as a standalone package. Fine for single-machine deployment.
+
+## 2026-02-07: Persona patches default to "proposed" status
+**Context:** persona_upgrader.py generates patches from recommendations, but applying them blindly could break personas.
+**Decision:** All patches default to `status="proposed"`. Human review required. `--auto-apply` flag available for low-risk changes.
+**Rationale:** Personas are critical to system quality. Automated generation is fine, but automated application needs explicit opt-in.
+
+## 2026-02-07: Weekly loop cadence via cron
+**Context:** How often should the feedback loop run?
+**Decision:** Weekly, matching Sky-Lynx's existing Sunday 2AM cron schedule.
+**Rationale:** Usage data accumulates over a week. More frequent would produce noise; less frequent would delay improvements.
