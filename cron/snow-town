@@ -1,0 +1,14 @@
+# Snow-Town Feedback Loop
+# Replaces the previous Sky-Lynx-only cron
+# Install: sudo cp /home/ubuntu/projects/snow-town/cron/snow-town /etc/cron.d/
+# Verify: sudo systemctl restart cron && sudo tail -f /var/log/syslog | grep CRON
+
+# Environment
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Create log directory if needed
+# sudo mkdir -p /var/log/snow-town && sudo chown ubuntu:ubuntu /var/log/snow-town
+
+# Run weekly on Sundays at 2 AM
+0 2 * * 0 ubuntu /home/ubuntu/projects/snow-town/scripts/run_loop.sh >> /var/log/snow-town/loop.log 2>&1

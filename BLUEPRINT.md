@@ -15,30 +15,38 @@
 - [x] Define PersonaUpgradePatch contract
 - [x] Implement ContractStore (JSONL + SQLite)
 - [x] Generate JSON schemas
-- [x] Write contract tests
+- [x] Write contract tests (33 passing)
 - [x] Create project files (README, CLAUDE.md, pyproject.toml)
 
 ### Phase 2: Outcome Recording in Ultra Magnus
-- [ ] Add `_emit_outcome_record()` to repository.py
-- [ ] Add `um_record_outcome` tool to server.py
-- [ ] Test with idea pipeline
+- [x] Add `_emit_outcome_record()` to repository.py
+- [x] Hook into `update_stage()` for terminal states
+- [x] Hook into `set_github_url()` for published state
+- [x] Add `um_record_outcome` tool to server.py
+- [x] Add `record_outcome_manual()` for retroactive recording
 
 ### Phase 3: Structured Recommendations in Sky-Lynx
-- [ ] Create `outcome_reader.py`
-- [ ] Extend `claude_client.py` with outcome data section
-- [ ] Add JSON sidecar to `report_writer.py`
-- [ ] Wire outcome reader in `analyzer.py`
+- [x] Create `outcome_reader.py` with digest builder
+- [x] Extend `claude_client.py` with outcome data section
+- [x] Add target_system, target_persona, recommendation_type to Recommendation model
+- [x] Update parse_recommendations() to extract new fields
+- [x] Add JSON sidecar writer to `report_writer.py`
+- [x] Write ImprovementRecommendations to snow-town JSONL store
+- [x] Wire outcome reader in `analyzer.py`
+- [x] All 28 existing tests still passing
 
 ### Phase 4: Persona Upgrade Engine
-- [ ] Create `persona_upgrader.py`
-- [ ] Implement Claude API patch generation
-- [ ] Add schema validation
-- [ ] Add --dry-run, --auto-apply, --persona flags
+- [x] Create `persona_upgrader.py`
+- [x] Implement Claude API patch generation with structured prompt
+- [x] Add schema validation via Academy CLI
+- [x] Add --dry-run, --auto-apply, --persona flags
+- [x] JSON Pointer patch application logic
 
 ### Phase 5: Loop Orchestration
-- [ ] Create `run_loop.sh`
-- [ ] Create `loop_status.py`
-- [ ] Update cron configuration
+- [x] Create `run_loop.sh` (orchestrates SL -> upgrader -> status)
+- [x] Create `loop_status.py` (reports all JSONL counts + health)
+- [x] Create cron configuration
+- [x] Dry-run test passes end-to-end
 
 ### Phase 6: Full Rename (Deferred)
 - [ ] Present rename map for approval
