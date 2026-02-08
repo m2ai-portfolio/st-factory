@@ -9,3 +9,8 @@ __pycache__/
 dist/
 build/
 .env
+
+# Dashboard (Next.js)
+dashboard/node_modules/
+dashboard/.next/
+dashboard/out/

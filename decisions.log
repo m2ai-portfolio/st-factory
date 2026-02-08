@@ -21,3 +21,25 @@
 **Context:** How often should the feedback loop run?
 **Decision:** Weekly, matching Sky-Lynx's existing Sunday 2AM cron schedule.
 **Rationale:** Usage data accumulates over a week. More frequent would produce noise; less frequent would delay improvements.
+
+## 2026-02-08: React Three Fiber over Unity for visualization
+**Context:** Phase 7 needs 3D ecosystem visualization with optional VR (Quest 3).
+**Decision:** Use React Three Fiber + @react-three/xr, NOT Unity.
+**Rationale:** Single codebase for both browser and VR modes. Web-native (no app store). Same React skills used across the project. R3F handles both 2D dashboard embedding and WebXR immersive mode. Unity would require a separate build pipeline, C# codebase, and more complex deployment.
+**Trade-offs:** R3F has lower 3D performance ceiling than Unity, but sufficient for our node/edge visualization.
+
+## 2026-02-08: FastAPI data server separate from existing ContractStore
+**Context:** Dashboard needs real-time API access to ecosystem data.
+**Decision:** New FastAPI server (`api/`) reads from existing ContractStore, Academy YAML, and UM SQLite. Read-only — never writes to any data source.
+**Rationale:** Decouples visualization from data mutation. Existing scripts continue to own writes. API layer just aggregates and serves. No modification to any existing code in snow-town, ultra-magnus, or academy.
+**Trade-offs:** Adds a new process to run (uvicorn). But it's lightweight and can be started alongside the dashboard.
+
+## 2026-02-08: SWR over TanStack Query for data fetching
+**Context:** Dashboard needs client-side data fetching with auto-refresh.
+**Decision:** SWR — simpler API, smaller bundle, built-in stale-while-revalidate.
+**Rationale:** Our data fetching is straightforward (GET endpoints, 30s refresh). SWR's minimal API covers all needs without TanStack Query's overhead.
+
+## 2026-02-08: Next.js dev server over static export
+**Context:** Dashboard uses dynamic routes (/nodes/[nodeId], /agents/[agentId]).
+**Decision:** Run via `next dev` or `next start` during development. Static export deferred.
+**Rationale:** Dynamic routes require either generateStaticParams or server-side rendering. For an internal dashboard on EC2, running a dev server is simpler. Static export can be re-enabled later with proper params generation.
