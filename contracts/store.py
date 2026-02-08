@@ -152,15 +152,22 @@ class ContractStore:
     def query_outcomes(
         self,
         outcome: str | None = None,
+        idea_id: int | None = None,
         limit: int = 100,
     ) -> list[OutcomeRecord]:
         """Query OutcomeRecords from SQLite."""
         conn = self._get_conn()
         query = "SELECT raw_json FROM outcome_records"
+        conditions: list[str] = []
         params: list = []
         if outcome:
-            query += " WHERE outcome = ?"
+            conditions.append("outcome = ?")
             params.append(outcome)
+        if idea_id is not None:
+            conditions.append("idea_id = ?")
+            params.append(idea_id)
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
         query += " ORDER BY emitted_at DESC LIMIT ?"
         params.append(limit)
         rows = conn.execute(query, params).fetchall()
