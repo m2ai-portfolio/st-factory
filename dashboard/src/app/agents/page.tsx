@@ -3,16 +3,18 @@
 import { useAgents } from "@/hooks/useAgents";
 import { AgentCard } from "@/components/agents/AgentCard";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { ErrorState } from "@/components/shared/ErrorState";
 
 export default function AgentsPage() {
-  const { data, error, isLoading } = useAgents();
+  const { data, error, isLoading, mutate } = useAgents();
 
   if (isLoading) return <LoadingState message="Loading agents..." />;
   if (error)
     return (
-      <div className="p-6 text-red-400">
-        Failed to load agents: {error.message}
-      </div>
+      <ErrorState
+        message={`Failed to load agents: ${error.message}`}
+        onRetry={() => mutate()}
+      />
     );
   if (!data) return null;
 

@@ -4,19 +4,21 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAgentDetail } from "@/hooks/useAgents";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { ErrorState } from "@/components/shared/ErrorState";
 import { PersonaDetail } from "@/components/agents/PersonaDetail";
 
 export default function AgentDetailPage() {
   const params = useParams();
   const agentId = params.agentId as string;
-  const { data, error, isLoading } = useAgentDetail(agentId);
+  const { data, error, isLoading, mutate } = useAgentDetail(agentId);
 
   if (isLoading) return <LoadingState message="Loading persona..." />;
   if (error)
     return (
-      <div className="p-6 text-red-400">
-        Failed to load agent: {error.message}
-      </div>
+      <ErrorState
+        message={`Failed to load agent: ${error.message}`}
+        onRetry={() => mutate()}
+      />
     );
   if (!data) return null;
 

@@ -47,4 +47,8 @@
   .badge-stale {
     @apply bg-amber-500/10 text-amber-400;
   }
+
+  .badge-error {
+    @apply bg-red-500/10 text-red-400;
+  }
 }

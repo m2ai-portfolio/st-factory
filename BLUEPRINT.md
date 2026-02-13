@@ -63,6 +63,7 @@
 - [x] Create `api/routers/nodes.py` — Node detail endpoint
 - [x] Create `api/routers/agents.py` — Agents endpoints
 - [x] Create `api/routers/pipeline.py` — Pipeline endpoints
+- [x] Create `api/routers/activity.py` — Activity feed endpoint (query_* with status overlay)
 - [x] Create `api/main.py` — FastAPI app with CORS, lifespan, health check
 - [x] Create test suite (19 tests, all passing)
 - [x] Update `pyproject.toml` with API dependencies
@@ -78,6 +79,11 @@
 - [x] Create API client + SWR hooks
 - [x] Create TypeScript types matching API responses
 - [x] Build passes, all routes return 200
+- [x] Rewrite home page from 3D-only to proper dashboard (HealthBanner, NodeStatusCards, ActivityFeed)
+- [x] Move 3D ecosystem view to dedicated /ecosystem route
+- [x] Add pipeline detail page (/pipeline/[ideaId])
+- [x] Add responsive sidebar with context provider
+- [x] Add error states, filter controls, and component improvements
 
 #### Phase 7c: 3D Ecosystem View
 - [x] Create EcosystemCanvas with R3F Canvas
@@ -125,7 +131,8 @@
 - [x] Add logrotate for /var/log/snow-town/loop.log
 - [x] Commit changes across repos
 
-#### Phase 7h: WebXR / VR Mode
+#### Phase 7h: WebXR / VR Mode (Deferred)
+VR placeholder files removed. @react-three/xr removed from deps. Revisit when Quest 3 testing is practical.
 - [ ] VRButton component (Enter VR when WebXR available)
 - [ ] VRScene with XR provider wrapping existing scene
 - [ ] VRLocomotion (teleport movement)

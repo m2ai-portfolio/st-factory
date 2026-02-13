@@ -91,32 +91,32 @@ export function PersonaDetail({ agent }: PersonaDetailProps) {
         </div>
       )}
 
-      {/* Metadata */}
+      {/* Metadata — responsive grid */}
       <div className="card col-span-full">
         <h3 className="text-sm font-medium text-slate-300 mb-2">Metadata</h3>
-        <div className="grid grid-cols-4 gap-4 text-sm">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div>
             <p className="text-xs text-slate-500">Version</p>
             <p className="text-slate-300">
-              {(agent.metadata.version as string) || "—"}
+              {(agent.metadata.version as string) || "\u2014"}
             </p>
           </div>
           <div>
             <p className="text-xs text-slate-500">Author</p>
             <p className="text-slate-300">
-              {(agent.metadata.author as string) || "—"}
+              {(agent.metadata.author as string) || "\u2014"}
             </p>
           </div>
           <div>
             <p className="text-xs text-slate-500">Created</p>
             <p className="text-slate-300">
-              {(agent.metadata.created as string) || "—"}
+              {(agent.metadata.created as string) || "\u2014"}
             </p>
           </div>
           <div>
             <p className="text-xs text-slate-500">Updated</p>
             <p className="text-slate-300">
-              {(agent.metadata.updated as string) || "—"}
+              {(agent.metadata.updated as string) || "\u2014"}
             </p>
           </div>
         </div>

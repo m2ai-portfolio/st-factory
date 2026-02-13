@@ -1,5 +1,6 @@
 interface PipelineStatusProps {
   stages: Record<string, number>;
+  onStageClick?: (stage: string) => void;
 }
 
 const STAGE_ORDER = [
@@ -30,7 +31,7 @@ const STAGE_COLORS: Record<string, string> = {
   deferred: "bg-orange-600",
 };
 
-export function PipelineStatus({ stages }: PipelineStatusProps) {
+export function PipelineStatus({ stages, onStageClick }: PipelineStatusProps) {
   const total = Object.values(stages).reduce((a, b) => a + b, 0);
   if (total === 0) return null;
 
@@ -45,7 +46,13 @@ export function PipelineStatus({ stages }: PipelineStatusProps) {
           const pct = Math.max((count / total) * 100, 4);
           const color = STAGE_COLORS[stage] || "bg-slate-600";
           return (
-            <div key={stage} className="flex items-center gap-3">
+            <div
+              key={stage}
+              className={`flex items-center gap-3 ${
+                onStageClick ? "cursor-pointer hover:bg-surface-overlay/30 -mx-2 px-2 py-0.5 rounded transition-colors" : ""
+              }`}
+              onClick={onStageClick ? () => onStageClick(stage) : undefined}
+            >
               <span className="text-xs text-slate-500 w-28 text-right">
                 {stage.replace(/_/g, " ")}
               </span>

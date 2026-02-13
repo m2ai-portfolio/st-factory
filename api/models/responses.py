@@ -128,6 +128,18 @@ class NodeDetail(BaseModel):
 # --- Health ---
 
 
+class ActivityEvent(BaseModel):
+    """Unified activity event from any contract type."""
+
+    event_type: str  # "outcome" | "recommendation" | "patch"
+    id: str
+    title: str
+    status: str
+    node_id: str  # "ultra_magnus" | "sky_lynx" | "academy"
+    timestamp: datetime
+    detail: dict = Field(default_factory=dict)
+
+
 class HealthResponse(BaseModel):
     """Lightweight health check response."""
 

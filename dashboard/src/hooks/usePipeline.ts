@@ -9,16 +9,21 @@ export function usePipeline(stage?: string, status?: string) {
   const query = params.toString();
   const path = `/api/v1/pipeline/ideas${query ? `?${query}` : ""}`;
 
-  return useSWR<IdeaSummary[]>(path, apiFetch);
+  return useSWR<IdeaSummary[]>(path, apiFetch, {
+    refreshInterval: 30000,
+  });
 }
 
 export function useIdeaDetail(ideaId: number | null) {
   return useSWR<IdeaDetail>(
     ideaId ? `/api/v1/pipeline/ideas/${ideaId}` : null,
-    apiFetch
+    apiFetch,
+    { refreshInterval: 30000 }
   );
 }
 
 export function useStages() {
-  return useSWR<Record<string, number>>("/api/v1/pipeline/stages", apiFetch);
+  return useSWR<Record<string, number>>("/api/v1/pipeline/stages", apiFetch, {
+    refreshInterval: 30000,
+  });
 }

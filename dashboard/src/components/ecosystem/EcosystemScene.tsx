@@ -25,9 +25,10 @@ const NODE_GEOMETRY: Record<string, "icosahedron" | "octahedron" | "dodecahedron
 
 interface EcosystemSceneProps {
   data: EcosystemSnapshot;
+  onNodeClick?: (nodeId: string) => void;
 }
 
-export function EcosystemScene({ data }: EcosystemSceneProps) {
+export function EcosystemScene({ data, onNodeClick }: EcosystemSceneProps) {
   return (
     <>
       {/* Lighting */}
@@ -49,6 +50,7 @@ export function EcosystemScene({ data }: EcosystemSceneProps) {
               geometry={geometry}
               color={color}
               tier={tier}
+              onNodeClick={onNodeClick}
             />
             <NodeLabel
               name={node.display_name}

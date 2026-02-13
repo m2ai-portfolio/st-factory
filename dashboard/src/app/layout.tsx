@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
+import { SidebarProvider } from "@/components/layout/SidebarContext";
 import "@/styles/globals.css";
 
 export const metadata: Metadata = {
@@ -16,11 +17,13 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body>
-        <Sidebar />
-        <div className="ml-56">
-          <Header />
-          <main className="pt-12 min-h-screen">{children}</main>
-        </div>
+        <SidebarProvider>
+          <Sidebar />
+          <div className="lg:ml-56">
+            <Header />
+            <main className="pt-12 min-h-screen">{children}</main>
+          </div>
+        </SidebarProvider>
       </body>
     </html>
   );

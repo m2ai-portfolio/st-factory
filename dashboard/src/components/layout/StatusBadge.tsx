@@ -12,6 +12,13 @@ const STATUS_STYLES: Record<string, string> = {
   proposed: "badge-stale",
   applied: "badge-healthy",
   rejected: "badge-idle",
+  error: "badge-error",
+  degraded: "badge-stale",
+  published: "badge-healthy",
+  approved: "badge-healthy",
+  pending: "badge-stale",
+  build_failed: "badge-error",
+  deferred: "badge-idle",
 };
 
 export function StatusBadge({ status }: StatusBadgeProps) {

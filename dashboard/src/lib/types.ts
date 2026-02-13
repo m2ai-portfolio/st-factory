@@ -90,6 +90,16 @@ export interface NodeDetail {
   recent_records: RecentRecord[];
 }
 
+export interface ActivityEvent {
+  event_type: "outcome" | "recommendation" | "patch";
+  id: string;
+  title: string;
+  status: string;
+  node_id: string;
+  timestamp: string;
+  detail: Record<string, unknown>;
+}
+
 export interface HealthResponse {
   status: string;
   timestamp: string;

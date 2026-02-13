@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api import deps
 from api.models.responses import HealthResponse
-from api.routers import agents, ecosystem, nodes, pipeline
+from api.routers import activity, agents, ecosystem, nodes, pipeline
 
 
 @asynccontextmanager
@@ -46,6 +46,7 @@ app.add_middleware(
 )
 
 # Register routers
+app.include_router(activity.router)
 app.include_router(ecosystem.router)
 app.include_router(nodes.router)
 app.include_router(agents.router)

@@ -27,6 +27,7 @@ class TargetScope(str, Enum):
     """Scope of the recommendation."""
     SPECIFIC_PERSONA = "specific_persona"
     ALL_PERSONAS = "all_personas"
+    ALL_IN_DEPARTMENT = "all_in_department"
 
 
 class EvidenceBasis(BaseModel):
@@ -53,6 +54,7 @@ class ImprovementRecommendation(BaseModel):
     suggested_change: str
     scope: TargetScope = TargetScope.ALL_PERSONAS
     target_persona_ids: list[str] = Field(default_factory=list)
+    target_department: str | None = None
     priority: str = "medium"  # high | medium | low
     impact: str = ""
     reversibility: str = "high"  # high | medium | low
@@ -62,9 +64,17 @@ class ImprovementRecommendation(BaseModel):
 
     @model_validator(mode="after")
     def validate_scope_targets(self) -> "ImprovementRecommendation":
-        """If scope is specific_persona, target_persona_ids must be non-empty."""
+        """Validate scope-dependent fields.
+
+        - SPECIFIC_PERSONA requires target_persona_ids
+        - ALL_IN_DEPARTMENT requires target_department
+        """
         if self.scope == TargetScope.SPECIFIC_PERSONA and not self.target_persona_ids:
             raise ValueError(
                 "target_persona_ids must be non-empty when scope is specific_persona"
+            )
+        if self.scope == TargetScope.ALL_IN_DEPARTMENT and not self.target_department:
+            raise ValueError(
+                "target_department must be set when scope is all_in_department"
             )
         return self

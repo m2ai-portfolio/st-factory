@@ -2,7 +2,6 @@
 
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { useRouter } from "next/navigation";
 import type { Mesh } from "three";
 import type { GrowthTier } from "@/lib/growth";
 
@@ -11,6 +10,7 @@ interface SystemNodeProps {
   geometry: "icosahedron" | "octahedron" | "dodecahedron";
   color: string;
   tier: GrowthTier;
+  onNodeClick?: (nodeId: string) => void;
 }
 
 const GEOMETRY_COMPONENTS = {
@@ -19,9 +19,8 @@ const GEOMETRY_COMPONENTS = {
   dodecahedron: (args: [number, number]) => <dodecahedronGeometry args={args} />,
 };
 
-export function SystemNode({ nodeId, geometry, color, tier }: SystemNodeProps) {
+export function SystemNode({ nodeId, geometry, color, tier, onNodeClick }: SystemNodeProps) {
   const meshRef = useRef<Mesh>(null);
-  const router = useRouter();
 
   // Slow rotation
   useFrame((_, delta) => {
@@ -40,7 +39,7 @@ export function SystemNode({ nodeId, geometry, color, tier }: SystemNodeProps) {
       scale={tier.scale}
       onClick={(e) => {
         e.stopPropagation();
-        router.push(`/nodes/${nodeId}`);
+        onNodeClick?.(nodeId);
       }}
       onPointerOver={(e) => {
         e.stopPropagation();

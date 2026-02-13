@@ -6,7 +6,6 @@ const nextConfig = {
   transpilePackages: [
     "@react-three/fiber",
     "@react-three/drei",
-    "@react-three/xr",
     "three",
   ],
 };
