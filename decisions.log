@@ -60,6 +60,12 @@
 **Decision:** Delete `/etc/cron.d/sky-lynx`. Only snow-town cron remains.
 **Rationale:** Dual cron caused duplicate recommendation writes (same session_id, doubled data). Single cron with dedup guard is the correct approach.
 
+## 2026-02-13: A2A protocol for multi-agent ecosystem (roadmap)
+**Context:** Chad (OpenClaw) runs its own reasoning loop on a different model. Needs to communicate with Snow Town agents as a peer, not as a tool consumer.
+**Decision:** Add A2A protocol integration to roadmap (Phase 9). Defer implementation until the feedback loop is stable and Chad's reasoning loop is mature.
+**Rationale:** MCP assumes single orchestrator calling tools — doesn't fit peer-to-peer agent coordination. A2A is model-agnostic and framework-agnostic, designed for exactly this use case. However, current priority is proving the ST loop works end-to-end autonomously before adding inter-agent communication.
+**Trade-offs:** Adds HTTP server complexity and a new protocol layer. Worth it when we have genuinely autonomous agents that need to discover and delegate to each other.
+
 ## 2026-02-08: Next.js dev server over static export
 **Context:** Dashboard uses dynamic routes (/nodes/[nodeId], /agents/[agentId]).
 **Decision:** Run via `next dev` or `next start` during development. Static export deferred.

@@ -131,6 +131,17 @@
 - [ ] VRLocomotion (teleport movement)
 - [ ] VRNodeInteractor (controller-based detail panels)
 
+### Phase 9: A2A Protocol Integration (Future)
+- [ ] Evaluate A2A spec against Snow Town's agent communication needs
+- [ ] Define Agent Cards for Snow Town agents (UM, SL, persona_upgrader)
+- [ ] Expose ContractStore operations as A2A task endpoints (via FastAPI)
+- [ ] Integrate Chad (OpenClaw) as first external A2A peer agent
+- [ ] Bidirectional task delegation (Chad <-> ST)
+- [ ] Agent discovery via `.well-known/agent.json`
+
+**Prerequisite**: Stable end-to-end loop (Phase 8), Chad's reasoning loop mature enough to delegate/receive tasks.
+**Rationale**: Chad runs its own model — MCP (tool-augmented) doesn't fit peer-to-peer coordination. A2A provides model-agnostic, framework-agnostic agent interop.
+
 #### Phase 7i: Polish & Documentation
 - [x] Update .gitignore for dashboard artifacts
 - [ ] Visual tuning (lighting, colors, animation curves)
