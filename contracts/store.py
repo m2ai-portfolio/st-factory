@@ -74,6 +74,7 @@ class ContractStore:
                 title TEXT NOT NULL,
                 priority TEXT DEFAULT 'medium',
                 scope TEXT,
+                target_department TEXT,
                 status TEXT DEFAULT 'pending',
                 emitted_at TEXT NOT NULL,
                 raw_json TEXT NOT NULL
@@ -109,9 +110,8 @@ class ContractStore:
 
     # --- OutcomeRecord ---
 
-    def write_outcome(self, record: OutcomeRecord) -> None:
-        """Write an OutcomeRecord to JSONL and SQLite."""
-        self._append_jsonl("outcome_record", record)
+    def _insert_outcome_sqlite(self, record: OutcomeRecord) -> None:
+        """Insert an OutcomeRecord into SQLite only."""
         conn = self._get_conn()
         conn.execute(
             """INSERT INTO outcome_records
@@ -137,6 +137,11 @@ class ContractStore:
             ),
         )
         conn.commit()
+
+    def write_outcome(self, record: OutcomeRecord) -> None:
+        """Write an OutcomeRecord to JSONL and SQLite."""
+        self._append_jsonl("outcome_record", record)
+        self._insert_outcome_sqlite(record)
 
     def read_outcomes(self, limit: int = 100) -> list[OutcomeRecord]:
         """Read OutcomeRecords from JSONL (source of truth)."""
@@ -175,15 +180,14 @@ class ContractStore:
 
     # --- ImprovementRecommendation ---
 
-    def write_recommendation(self, rec: ImprovementRecommendation) -> None:
-        """Write an ImprovementRecommendation to JSONL and SQLite."""
-        self._append_jsonl("improvement_recommendation", rec)
+    def _insert_recommendation_sqlite(self, rec: ImprovementRecommendation) -> None:
+        """Insert an ImprovementRecommendation into SQLite only."""
         conn = self._get_conn()
         conn.execute(
             """INSERT OR REPLACE INTO improvement_recommendations
             (recommendation_id, session_id, recommendation_type, target_system,
-             title, priority, scope, status, emitted_at, raw_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+             title, priority, scope, target_department, status, emitted_at, raw_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 rec.recommendation_id,
                 rec.session_id,
@@ -192,12 +196,18 @@ class ContractStore:
                 rec.title,
                 rec.priority,
                 rec.scope.value,
+                rec.target_department,
                 rec.status,
                 rec.emitted_at.isoformat(),
                 rec.model_dump_json(),
             ),
         )
         conn.commit()
+
+    def write_recommendation(self, rec: ImprovementRecommendation) -> None:
+        """Write an ImprovementRecommendation to JSONL and SQLite."""
+        self._append_jsonl("improvement_recommendation", rec)
+        self._insert_recommendation_sqlite(rec)
 
     def read_recommendations(self, limit: int = 100) -> list[ImprovementRecommendation]:
         """Read ImprovementRecommendations from JSONL."""
@@ -214,11 +224,16 @@ class ContractStore:
         self,
         target_system: str | None = None,
         status: str | None = None,
+        target_department: str | None = None,
         limit: int = 100,
     ) -> list[ImprovementRecommendation]:
-        """Query ImprovementRecommendations from SQLite."""
+        """Query ImprovementRecommendations from SQLite.
+
+        Overlays current SQLite status onto deserialized objects,
+        since raw_json retains the original write-time status.
+        """
         conn = self._get_conn()
-        query = "SELECT raw_json FROM improvement_recommendations"
+        query = "SELECT raw_json, status AS current_status FROM improvement_recommendations"
         conditions: list[str] = []
         params: list = []
         if target_system:
@@ -227,12 +242,20 @@ class ContractStore:
         if status:
             conditions.append("status = ?")
             params.append(status)
+        if target_department:
+            conditions.append("target_department = ?")
+            params.append(target_department)
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
         query += " ORDER BY emitted_at DESC LIMIT ?"
         params.append(limit)
         rows = conn.execute(query, params).fetchall()
-        return [ImprovementRecommendation.model_validate_json(row["raw_json"]) for row in rows]
+        results = []
+        for row in rows:
+            rec = ImprovementRecommendation.model_validate_json(row["raw_json"])
+            rec.status = row["current_status"]
+            results.append(rec)
+        return results
 
     def update_recommendation_status(self, recommendation_id: str, status: str) -> None:
         """Update the status of a recommendation in SQLite."""
@@ -245,9 +268,8 @@ class ContractStore:
 
     # --- PersonaUpgradePatch ---
 
-    def write_patch(self, patch: PersonaUpgradePatch) -> None:
-        """Write a PersonaUpgradePatch to JSONL and SQLite."""
-        self._append_jsonl("persona_patch", patch)
+    def _insert_patch_sqlite(self, patch: PersonaUpgradePatch) -> None:
+        """Insert a PersonaUpgradePatch into SQLite only."""
         conn = self._get_conn()
         conn.execute(
             """INSERT OR REPLACE INTO persona_patches
@@ -268,6 +290,11 @@ class ContractStore:
         )
         conn.commit()
 
+    def write_patch(self, patch: PersonaUpgradePatch) -> None:
+        """Write a PersonaUpgradePatch to JSONL and SQLite."""
+        self._append_jsonl("persona_patch", patch)
+        self._insert_patch_sqlite(patch)
+
     def read_patches(self, limit: int = 100) -> list[PersonaUpgradePatch]:
         """Read PersonaUpgradePatches from JSONL."""
         path = self._jsonl_path("persona_patch")
@@ -285,9 +312,13 @@ class ContractStore:
         status: str | None = None,
         limit: int = 100,
     ) -> list[PersonaUpgradePatch]:
-        """Query PersonaUpgradePatches from SQLite."""
+        """Query PersonaUpgradePatches from SQLite.
+
+        Overlays current SQLite status onto deserialized objects,
+        since raw_json retains the original write-time status.
+        """
         conn = self._get_conn()
-        query = "SELECT raw_json FROM persona_patches"
+        query = "SELECT raw_json, status AS current_status FROM persona_patches"
         conditions: list[str] = []
         params: list = []
         if persona_id:
@@ -301,7 +332,12 @@ class ContractStore:
         query += " ORDER BY emitted_at DESC LIMIT ?"
         params.append(limit)
         rows = conn.execute(query, params).fetchall()
-        return [PersonaUpgradePatch.model_validate_json(row["raw_json"]) for row in rows]
+        results = []
+        for row in rows:
+            patch = PersonaUpgradePatch.model_validate_json(row["raw_json"])
+            patch.status = row["current_status"]
+            results.append(patch)
+        return results
 
     def update_patch_status(self, patch_id: str, status: str) -> None:
         """Update the status of a patch in SQLite."""
@@ -315,20 +351,25 @@ class ContractStore:
     # --- Rebuild ---
 
     def rebuild_sqlite(self) -> None:
-        """Rebuild SQLite from JSONL files. Useful for recovery."""
+        """Rebuild SQLite from JSONL files. Useful for recovery.
+
+        Drops and recreates tables to handle schema changes,
+        then re-inserts all records from JSONL without re-appending to JSONL.
+        """
         conn = self._get_conn()
         conn.executescript("""
-            DELETE FROM outcome_records;
-            DELETE FROM improvement_recommendations;
-            DELETE FROM persona_patches;
+            DROP TABLE IF EXISTS outcome_records;
+            DROP TABLE IF EXISTS improvement_recommendations;
+            DROP TABLE IF EXISTS persona_patches;
         """)
+        self._ensure_tables()
 
         for record in self.read_outcomes(limit=10000):
-            self.write_outcome(record)
+            self._insert_outcome_sqlite(record)
         for rec in self.read_recommendations(limit=10000):
-            self.write_recommendation(rec)
+            self._insert_recommendation_sqlite(rec)
         for patch in self.read_patches(limit=10000):
-            self.write_patch(patch)
+            self._insert_patch_sqlite(patch)
 
     def close(self) -> None:
         """Close the SQLite connection."""

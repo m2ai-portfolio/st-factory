@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Snow-Town Loop Status Reporter.
 
-Reads all three JSONL files and reports the current state of
-the feedback loop.
+Reads from SQLite (status-aware query layer) to report
+the current state of the feedback loop.
 
 Usage:
     python scripts/loop_status.py
@@ -21,21 +21,22 @@ def report_status() -> None:
     """Print feedback loop status report."""
     store = ContractStore()
 
-    outcomes = store.read_outcomes(limit=10000)
-    recommendations = store.read_recommendations(limit=10000)
-    patches = store.read_patches(limit=10000)
+    # Use query_* methods (SQLite) for status-aware data
+    outcomes = store.query_outcomes(limit=10000)
+    all_recs = store.query_recommendations(limit=10000)
+    all_patches = store.query_patches(limit=10000)
 
-    # Categorize recommendations
-    pending_recs = [r for r in recommendations if r.status == "pending"]
-    applied_recs = [r for r in recommendations if r.status == "applied"]
+    # Categorize recommendations by status and target
+    pending_recs = store.query_recommendations(status="pending", limit=10000)
+    applied_recs = store.query_recommendations(status="applied", limit=10000)
     persona_recs = [r for r in pending_recs if r.target_system == "persona"]
     claude_md_recs = [r for r in pending_recs if r.target_system == "claude_md"]
     pipeline_recs = [r for r in pending_recs if r.target_system == "pipeline"]
 
-    # Categorize patches
-    proposed_patches = [p for p in patches if p.status == "proposed"]
-    applied_patches = [p for p in patches if p.status == "applied"]
-    rejected_patches = [p for p in patches if p.status == "rejected"]
+    # Categorize patches by status
+    proposed_patches = store.query_patches(status="proposed", limit=10000)
+    applied_patches = store.query_patches(status="applied", limit=10000)
+    rejected_patches = store.query_patches(status="rejected", limit=10000)
 
     # Outcome distribution
     outcome_counts: dict[str, int] = {}
@@ -51,7 +52,7 @@ def report_status() -> None:
     if proposed_patches:
         oldest_patch = min(p.emitted_at for p in proposed_patches)
 
-    # Count completed cycles (outcome -> recommendation -> patch)
+    # Count completed cycles (outcome -> recommendation -> patch applied)
     patch_source_ids = set()
     for p in applied_patches:
         patch_source_ids.update(p.source_recommendation_ids)
@@ -67,13 +68,13 @@ def report_status() -> None:
     for outcome, count in sorted(outcome_counts.items()):
         print(f"    - {outcome}: {count}")
 
-    print(f"\n  Improvement Recommendations: {len(recommendations)}")
+    print(f"\n  Improvement Recommendations: {len(all_recs)}")
     print(f"    - Pending (persona):     {len(persona_recs)}")
     print(f"    - Pending (claude_md):   {len(claude_md_recs)}")
     print(f"    - Pending (pipeline):    {len(pipeline_recs)}")
     print(f"    - Applied:               {len(applied_recs)}")
 
-    print(f"\n  Persona Patches:           {len(patches)}")
+    print(f"\n  Persona Patches:           {len(all_patches)}")
     print(f"    - Proposed (review):     {len(proposed_patches)}")
     print(f"    - Applied:               {len(applied_patches)}")
     print(f"    - Rejected:              {len(rejected_patches)}")
@@ -92,12 +93,14 @@ def report_status() -> None:
     print("\n  Health:")
     if not outcomes:
         print("    [!] No outcome records yet - run ideas through UM pipeline")
-    elif not recommendations:
+    elif not all_recs:
         print("    [!] No recommendations yet - run Sky-Lynx analyzer")
-    elif not patches and persona_recs:
+    elif not all_patches and persona_recs:
         print("    [!] Persona recommendations waiting - run persona_upgrader")
     elif proposed_patches:
         print(f"    [!] {len(proposed_patches)} patches awaiting human review")
+    elif completed_cycles > 0:
+        print("    [OK] Loop has completed cycles - running end-to-end")
     else:
         print("    [OK] Loop is flowing")
 

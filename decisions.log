@@ -39,6 +39,27 @@
 **Decision:** SWR — simpler API, smaller bundle, built-in stale-while-revalidate.
 **Rationale:** Our data fetching is straightforward (GET endpoints, 30s refresh). SWR's minimal API covers all needs without TanStack Query's overhead.
 
+## 2026-02-13: JSONL immutability vs SQLite status tracking
+**Context:** loop_status.py was reading from JSONL `read_*()` methods, which never reflect status changes (applied, rejected). Patches showed as "proposed" forever in status reports.
+**Decision:** Switch all status-aware reporting to `query_*()` methods (SQLite). Overlay current SQLite status onto deserialized objects since `raw_json` retains write-time status.
+**Rationale:** JSONL is the immutable event log — it records what was proposed at the time. SQLite tracks mutable state (pending → applied → rejected). Status reports must use the mutable layer.
+**Trade-offs:** Slight complexity in query methods (status overlay). But correctly separates concerns: JSONL = history, SQLite = current state.
+
+## 2026-02-13: rebuild_sqlite() must not re-append to JSONL
+**Context:** `rebuild_sqlite()` was calling `write_outcome()` etc., which both insert to SQLite AND append to JSONL. Running rebuild doubled all JSONL records.
+**Decision:** Extract SQLite-only insert helpers (`_insert_outcome_sqlite()` etc.). `rebuild_sqlite()` uses these. Also drops and recreates tables (handles schema changes).
+**Rationale:** Rebuild is a recovery operation on the query layer — it must never touch the source of truth (JSONL).
+
+## 2026-02-13: Manual verification recommendation for loop testing
+**Context:** No organic persona-targeted recommendations existed (all 4 were pipeline/claude_md). Couldn't prove the full loop without persona data.
+**Decision:** Created a manual recommendation (`sl-manual-verify-01`) targeting sky-lynx to exercise the persona_upgrader → review_patch → reject path.
+**Rationale:** Can't wait weeks for organic data. The manual recommendation is clearly tagged and traceable. Verifies the complete feedback cycle works before the next cron run.
+
+## 2026-02-13: Remove conflicting sky-lynx cron
+**Context:** Both `/etc/cron.d/sky-lynx` and `/etc/cron.d/snow-town` fired Sunday 2AM. Snow-town's `run_loop.sh` already calls Sky-Lynx as step 1.
+**Decision:** Delete `/etc/cron.d/sky-lynx`. Only snow-town cron remains.
+**Rationale:** Dual cron caused duplicate recommendation writes (same session_id, doubled data). Single cron with dedup guard is the correct approach.
+
 ## 2026-02-08: Next.js dev server over static export
 **Context:** Dashboard uses dynamic routes (/nodes/[nodeId], /agents/[agentId]).
 **Decision:** Run via `next dev` or `next start` during development. Static export deferred.

@@ -107,6 +107,24 @@
 - [x] Visual effects: wireframe for Seed, solid for Active+, scale/glow by tier
 - [ ] Animated tier transitions (springs)
 
+### Phase 8: Loop Verification (End-to-End)
+- [x] Data integrity: Remove duplicate OutcomeRecord for idea #5
+- [x] Data integrity: Remove dry-run test artifact from recommendations
+- [x] Fix rebuild_sqlite() — was re-appending to JSONL (critical bug)
+- [x] Fix loop_status.py — switch from JSONL (immutable) to SQLite (status-aware)
+- [x] Fix query_recommendations/query_patches — overlay SQLite status onto raw_json
+- [x] Fix recommendation dedup in report_writer.py (session_id check)
+- [x] Remove conflicting /etc/cron.d/sky-lynx (snow-town cron already calls SL)
+- [x] Add env sourcing to run_loop.sh for cron robustness
+- [x] Create review_patch.py HIL tool (list/show/apply/reject)
+- [x] Apply patch-c6495783 (user_adoption_journey framework to sky-lynx)
+- [x] Validate updated persona passes Academy schema
+- [x] Exercise persona_upgrader -> review -> reject path (patch-4564f91b)
+- [x] Verify loop_status shows completed cycles >= 1
+- [x] Test cron environment (stripped env dry-run passes)
+- [x] Add logrotate for /var/log/snow-town/loop.log
+- [x] Commit changes across repos
+
 #### Phase 7h: WebXR / VR Mode
 - [ ] VRButton component (Enter VR when WebXR available)
 - [ ] VRScene with XR provider wrapping existing scene

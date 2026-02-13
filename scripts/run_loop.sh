@@ -12,6 +12,13 @@
 
 set -euo pipefail
 
+# Source shared env for cron context (API keys, PATH, etc.)
+if [[ -f "$HOME/.env.shared" ]]; then
+    set -a
+    source "$HOME/.env.shared"
+    set +a
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SNOW_TOWN_DIR="$(dirname "$SCRIPT_DIR")"
 SKY_LYNX_DIR="$HOME/projects/sky-lynx"
