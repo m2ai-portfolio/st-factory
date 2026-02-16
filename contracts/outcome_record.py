@@ -15,6 +15,7 @@ class TerminalOutcome(str, Enum):
     REJECTED = "rejected"
     DEFERRED = "deferred"
     BUILD_FAILED = "build_failed"
+    FEATURE_BACKLOG = "feature_backlog"
 
 
 class PipelineTrace(BaseModel):
@@ -32,7 +33,7 @@ class OutcomeRecord(BaseModel):
     Postcondition: record is append-only, written to JSONL + SQLite.
     Invariant: pipeline_trace is chronologically ordered; contract_version always present.
     """
-    contract_version: str = "1.0.0"
+    contract_version: str = "1.1.0"
     idea_id: int
     idea_title: str
     outcome: TerminalOutcome
@@ -46,6 +47,7 @@ class OutcomeRecord(BaseModel):
     total_duration_seconds: float = 0.0
     tags: list[str] = Field(default_factory=list)
     github_url: str | None = None
+    idea_type: str | None = None
     emitted_at: datetime = Field(default_factory=datetime.now)
 
     @model_validator(mode="after")

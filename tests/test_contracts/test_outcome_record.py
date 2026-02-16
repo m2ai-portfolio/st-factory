@@ -17,7 +17,7 @@ class TestOutcomeRecord:
             idea_title="Test Idea",
             outcome=TerminalOutcome.PUBLISHED,
         )
-        assert record.contract_version == "1.0.0"
+        assert record.contract_version == "1.1.0"
         assert record.idea_id == 1
         assert record.outcome == TerminalOutcome.PUBLISHED
         assert record.artifact_count == 0
@@ -100,4 +100,4 @@ class TestOutcomeRecord:
         schema = OutcomeRecord.model_json_schema()
         props = schema["properties"]
         assert "contract_version" in props
-        assert props["contract_version"]["default"] == "1.0.0"
+        assert props["contract_version"]["default"] == "1.1.0"

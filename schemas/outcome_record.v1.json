@@ -51,7 +51,8 @@
         "published",
         "rejected",
         "deferred",
-        "build_failed"
+        "build_failed",
+        "feature_backlog"
       ],
       "title": "TerminalOutcome",
       "type": "string"
@@ -60,7 +61,7 @@
   "description": "Record emitted when an idea reaches a terminal state.\n\nPrecondition: idea must be in a terminal state.\nPostcondition: record is append-only, written to JSONL + SQLite.\nInvariant: pipeline_trace is chronologically ordered; contract_version always present.",
   "properties": {
     "contract_version": {
-      "default": "1.0.0",
+      "default": "1.1.0",
       "title": "Contract Version",
       "type": "string"
     },
@@ -165,6 +166,18 @@
       ],
       "default": null,
       "title": "Github Url"
+    },
+    "idea_type": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Idea Type"
     },
     "emitted_at": {
       "format": "date-time",
