@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from .improvement_recommendation import ImprovementRecommendation
 from .outcome_record import OutcomeRecord
 from .persona_upgrade_patch import PersonaUpgradePatch
+from .research_signal import ResearchSignal
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -92,6 +93,22 @@ class ContractStore:
                 emitted_at TEXT NOT NULL,
                 raw_json TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS research_signals (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                signal_id TEXT NOT NULL UNIQUE,
+                source TEXT NOT NULL,
+                title TEXT NOT NULL,
+                summary TEXT NOT NULL,
+                url TEXT,
+                relevance TEXT NOT NULL,
+                relevance_rationale TEXT DEFAULT '',
+                tags TEXT DEFAULT '[]',
+                domain TEXT,
+                consumed_by TEXT,
+                emitted_at TEXT NOT NULL,
+                raw_json TEXT NOT NULL
+            );
         """)
         conn.commit()
 
@@ -100,6 +117,7 @@ class ContractStore:
             "outcome_record": self.data_dir / "outcome_records.jsonl",
             "improvement_recommendation": self.data_dir / "improvement_recommendations.jsonl",
             "persona_patch": self.data_dir / "persona_patches.jsonl",
+            "research_signal": self.data_dir / "research_signals.jsonl",
         }
         return paths[contract_type]
 
@@ -348,6 +366,100 @@ class ContractStore:
         )
         conn.commit()
 
+    # --- ResearchSignal ---
+
+    def _insert_signal_sqlite(self, signal: ResearchSignal) -> None:
+        """Insert a ResearchSignal into SQLite only."""
+        conn = self._get_conn()
+        conn.execute(
+            """INSERT OR REPLACE INTO research_signals
+            (signal_id, source, title, summary, url, relevance,
+             relevance_rationale, tags, domain, consumed_by, emitted_at, raw_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                signal.signal_id,
+                signal.source.value,
+                signal.title,
+                signal.summary,
+                signal.url,
+                signal.relevance.value,
+                signal.relevance_rationale,
+                json.dumps(signal.tags),
+                signal.domain,
+                signal.consumed_by,
+                signal.emitted_at.isoformat(),
+                signal.model_dump_json(),
+            ),
+        )
+        conn.commit()
+
+    def write_signal(self, signal: ResearchSignal) -> None:
+        """Write a ResearchSignal to JSONL and SQLite."""
+        self._append_jsonl("research_signal", signal)
+        self._insert_signal_sqlite(signal)
+
+    def read_signals(self, limit: int = 100) -> list[ResearchSignal]:
+        """Read ResearchSignals from JSONL (source of truth)."""
+        path = self._jsonl_path("research_signal")
+        if not path.exists():
+            return []
+        records = []
+        for line in path.read_text().strip().splitlines():
+            if line:
+                records.append(ResearchSignal.model_validate_json(line))
+        return records[-limit:]
+
+    def query_signals(
+        self,
+        source: str | None = None,
+        relevance: str | None = None,
+        domain: str | None = None,
+        consumed: bool | None = None,
+        limit: int = 100,
+    ) -> list[ResearchSignal]:
+        """Query ResearchSignals from SQLite.
+
+        Overlays current SQLite consumed_by onto deserialized objects,
+        since raw_json retains the original write-time state.
+        """
+        conn = self._get_conn()
+        query = "SELECT raw_json, consumed_by AS current_consumed_by FROM research_signals"
+        conditions: list[str] = []
+        params: list = []
+        if source:
+            conditions.append("source = ?")
+            params.append(source)
+        if relevance:
+            conditions.append("relevance = ?")
+            params.append(relevance)
+        if domain:
+            conditions.append("domain = ?")
+            params.append(domain)
+        if consumed is True:
+            conditions.append("consumed_by IS NOT NULL")
+        elif consumed is False:
+            conditions.append("consumed_by IS NULL")
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+        query += " ORDER BY emitted_at DESC LIMIT ?"
+        params.append(limit)
+        rows = conn.execute(query, params).fetchall()
+        results = []
+        for row in rows:
+            signal = ResearchSignal.model_validate_json(row["raw_json"])
+            signal.consumed_by = row["current_consumed_by"]
+            results.append(signal)
+        return results
+
+    def update_signal_consumed_by(self, signal_id: str, consumed_by: str) -> None:
+        """Mark a signal as consumed by a downstream process."""
+        conn = self._get_conn()
+        conn.execute(
+            "UPDATE research_signals SET consumed_by = ? WHERE signal_id = ?",
+            (consumed_by, signal_id),
+        )
+        conn.commit()
+
     # --- Rebuild ---
 
     def rebuild_sqlite(self) -> None:
@@ -361,6 +473,7 @@ class ContractStore:
             DROP TABLE IF EXISTS outcome_records;
             DROP TABLE IF EXISTS improvement_recommendations;
             DROP TABLE IF EXISTS persona_patches;
+            DROP TABLE IF EXISTS research_signals;
         """)
         self._ensure_tables()
 
@@ -370,6 +483,8 @@ class ContractStore:
             self._insert_recommendation_sqlite(rec)
         for patch in self.read_patches(limit=10000):
             self._insert_patch_sqlite(patch)
+        for signal in self.read_signals(limit=10000):
+            self._insert_signal_sqlite(signal)
 
     def close(self) -> None:
         """Close the SQLite connection."""

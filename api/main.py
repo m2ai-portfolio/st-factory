@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api import deps
 from api.models.responses import HealthResponse
-from api.routers import activity, agents, ecosystem, nodes, pipeline
+from api.routers import activity, agents, ecosystem, nodes, pipeline, research
 
 
 @asynccontextmanager
@@ -51,6 +51,7 @@ app.include_router(ecosystem.router)
 app.include_router(nodes.router)
 app.include_router(agents.router)
 app.include_router(pipeline.router)
+app.include_router(research.router)
 
 
 @app.get("/api/v1/health", response_model=HealthResponse, tags=["health"])

@@ -41,6 +41,7 @@ def get_ecosystem() -> EcosystemSnapshot:
     outcomes = store.read_outcomes(limit=10000)
     recommendations = store.read_recommendations(limit=10000)
     patches = store.read_patches(limit=10000)
+    signals = store.read_signals(limit=10000)
 
     # --- Node: Ultra Magnus (outcomes) ---
     outcome_counts: dict[str, int] = {}
@@ -99,6 +100,22 @@ def get_ecosystem() -> EcosystemSnapshot:
         breakdown=patch_breakdown,
     )
 
+    # --- Node: Research Agents (signals) ---
+    signal_by_source: dict[str, int] = {}
+    for s in signals:
+        signal_by_source[s.source.value] = signal_by_source.get(s.source.value, 0) + 1
+
+    ra_last = max((s.emitted_at for s in signals), default=None)
+    ra_node = NodeMetrics(
+        node_id="research_agents",
+        display_name="Research Agents",
+        record_count=len(signals),
+        pending_count=0,
+        last_activity=ra_last,
+        health_status=_health_status(len(signals), ra_last),
+        breakdown=signal_by_source if signal_by_source else None,
+    )
+
     # --- Edges ---
     edges = [
         EdgeMetrics(
@@ -122,6 +139,13 @@ def get_ecosystem() -> EcosystemSnapshot:
             total_records=len(patches),
             recent_count=_recent_count(patches),
         ),
+        EdgeMetrics(
+            source="research_agents",
+            target="sky_lynx",
+            label="ResearchSignal",
+            total_records=len(signals),
+            recent_count=_recent_count(signals),
+        ),
     ]
 
     # --- Cycle count (patches with source_recommendation_ids that are applied) ---
@@ -141,7 +165,7 @@ def get_ecosystem() -> EcosystemSnapshot:
     return EcosystemSnapshot(
         timestamp=datetime.now(),
         cycle_count=cycle_count,
-        nodes=[um_node, sl_node, ac_node],
+        nodes=[um_node, sl_node, ac_node, ra_node],
         edges=edges,
         loop_health=loop_health,
     )

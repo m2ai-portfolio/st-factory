@@ -4,6 +4,7 @@ Defines the data contracts that flow between layers:
 - OutcomeRecord: Ultra Magnus -> Sky-Lynx
 - ImprovementRecommendation: Sky-Lynx -> Academy
 - PersonaUpgradePatch: Academy -> Ultra Magnus
+- ResearchSignal: Research Agents -> Sky-Lynx
 """
 
 from .improvement_recommendation import (
@@ -14,6 +15,7 @@ from .improvement_recommendation import (
 )
 from .outcome_record import OutcomeRecord, PipelineTrace, TerminalOutcome
 from .persona_upgrade_patch import PersonaFieldPatch, PersonaUpgradePatch
+from .research_signal import ResearchSignal, SignalRelevance, SignalSource
 from .store import ContractStore
 
 __all__ = [
@@ -26,5 +28,8 @@ __all__ = [
     "EvidenceBasis",
     "PersonaUpgradePatch",
     "PersonaFieldPatch",
+    "ResearchSignal",
+    "SignalRelevance",
+    "SignalSource",
     "ContractStore",
 ]

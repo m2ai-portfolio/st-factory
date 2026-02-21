@@ -89,6 +89,28 @@ def report_status() -> None:
         age = datetime.now() - oldest_patch
         print(f"  Oldest Pending Patch:      {age.days}d {age.seconds // 3600}h ago")
 
+    # Research signals
+    all_signals = store.query_signals(limit=10000)
+    signal_by_source: dict[str, int] = {}
+    signal_by_relevance: dict[str, int] = {}
+    for s in all_signals:
+        signal_by_source[s.source.value] = signal_by_source.get(s.source.value, 0) + 1
+        signal_by_relevance[s.relevance.value] = signal_by_relevance.get(s.relevance.value, 0) + 1
+
+    print(f"\n  Research Signals:          {len(all_signals)}")
+    for src, cnt in sorted(signal_by_source.items()):
+        print(f"    - {src}: {cnt}")
+    if signal_by_relevance:
+        print("    By relevance:")
+        for rel, cnt in sorted(signal_by_relevance.items()):
+            print(f"      {rel}: {cnt}")
+
+    # Research signal freshness
+    if all_signals:
+        newest_signal = max(s.emitted_at for s in all_signals)
+        age = datetime.now() - newest_signal
+        print(f"  Last Signal Received:      {age.days}d {age.seconds // 3600}h ago")
+
     # Health check
     print("\n  Health:")
     if not outcomes:

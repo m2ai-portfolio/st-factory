@@ -48,8 +48,8 @@ def test_ecosystem_empty(client):
     data = resp.json()
     assert data["loop_health"] == "idle"
     assert data["cycle_count"] == 0
-    assert len(data["nodes"]) == 3
-    assert len(data["edges"]) == 3
+    assert len(data["nodes"]) == 4
+    assert len(data["edges"]) == 4
     for node in data["nodes"]:
         assert node["record_count"] == 0
         assert node["health_status"] == "idle"
@@ -107,7 +107,9 @@ def test_ecosystem_with_all_record_types(client, store):
     resp = client.get("/api/v1/ecosystem")
     data = resp.json()
     assert data["loop_health"] == "flowing"
-    assert all(n["record_count"] >= 1 for n in data["nodes"])
+    # The 3 core loop nodes should have records; research_agents may be 0
+    core_nodes = [n for n in data["nodes"] if n["node_id"] != "research_agents"]
+    assert all(n["record_count"] >= 1 for n in core_nodes)
 
 
 def test_ecosystem_edge_counts(client, store):
