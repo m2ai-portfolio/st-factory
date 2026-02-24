@@ -1,57 +1,222 @@
-# Snow-Town
+# ST Factory (Snow-Town)
 
-Closed-loop learning ecosystem connecting three projects into a feedback triangle:
-
-- **Ultra Magnus** (idea pipeline) produces outcome data
-- **Sky-Lynx** (observer) analyzes outcomes into improvement recommendations
-- **Agent Persona Academy** (factory) consumes recommendations to upgrade personas
-
-Upgraded personas feed back into Ultra Magnus for the next cycle.
+Closed-loop learning ecosystem for the ST Metro pipeline. Connects three autonomous systems into a feedback triangle: outcomes drive analysis, analysis produces recommendations, recommendations upgrade personas, upgraded personas improve future outcomes.
 
 ## Architecture
 
 ```
-Ultra Magnus ──OutcomeRecord──> Sky-Lynx
-     ^                              │
-     │                    ImprovementRecommendation
-PersonaUpgradePatch                 │
-     │                              v
-     └──────────── Agent Persona Academy
+Ultra Magnus (idea pipeline)
+    │
+    └── OutcomeRecord ──> Snow-Town ContractStore (JSONL + SQLite)
+                                │
+                                v
+                          Sky-Lynx (weekly analysis)
+                                │
+                                └── ImprovementRecommendation ──> ContractStore
+                                                                       │
+                                                                       v
+                                                                persona_upgrader.py
+                                                                       │
+                                                                       └── PersonaUpgradePatch ──> ContractStore
+                                                                                                       │
+                                                                                                       v
+                                                                                            Agent Persona Academy
+                                                                                            (YAML persona files)
+                                                                                                       │
+                                                                                                       └──> Ultra Magnus (upgraded personas)
 ```
 
-## Contracts
+**External readers**: Metroplex reads `persona_metrics.db` via `?mode=ro` to source patches for Gate 3 (patcher). Sky-Lynx reads JSONL + SQLite for weekly analysis.
 
-| Contract | From | To | Purpose |
-|----------|------|----|---------|
-| `OutcomeRecord` | Ultra Magnus | Sky-Lynx | Idea pipeline outcomes |
-| `ImprovementRecommendation` | Sky-Lynx | Academy | Typed improvement proposals |
-| `PersonaUpgradePatch` | Academy | Ultra Magnus | Persona YAML diffs |
+## Data Model
+
+### Contracts (Pydantic v2)
+
+| Contract | From | To | File |
+|----------|------|----|------|
+| `OutcomeRecord` | Ultra Magnus | Sky-Lynx | `contracts/outcome_record.py` |
+| `ImprovementRecommendation` | Sky-Lynx | persona_upgrader | `contracts/improvement_recommendation.py` |
+| `PersonaUpgradePatch` | persona_upgrader | Academy | `contracts/persona_upgrade_patch.py` |
+| `ResearchSignal` | Research Agents | IdeaForge | `contracts/research_signal.py` |
+
+### Storage: Dual-Write (JSONL + SQLite)
+
+- **JSONL** (`data/*.jsonl`) — append-only, git-tracked, source of truth
+- **SQLite** (`data/persona_metrics.db`) — query layer with status tracking, rebuildable from JSONL via `ContractStore.rebuild_sqlite()`
+
+The `ContractStore` (`contracts/store.py`) handles both writes atomically. Status updates (e.g. patch proposed -> applied) are written to SQLite only; JSONL preserves the original record.
+
+### SQLite Tables
+
+| Table | Key Columns | Status Values |
+|-------|------------|---------------|
+| `outcome_records` | idea_id, outcome, overall_score, emitted_at | - |
+| `improvement_recommendations` | recommendation_id, recommendation_type, target_system, priority | pending, applied, rejected |
+| `persona_patches` | patch_id, persona_id, from_version, to_version, schema_valid | proposed, applied, rejected |
+| `research_signals` | signal_id, source, relevance, domain, consumed_by | - |
 
 ## Setup
 
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev]"
+pip install -e ".[dev]"        # Contracts + scripts + tests
+pip install -e ".[api]"        # Also installs FastAPI/uvicorn for the API
 ```
 
-## Tests
+## Usage
+
+### Scripts
 
 ```bash
-pytest tests/
+source .venv/bin/activate
+
+# Full feedback loop (Sky-Lynx analysis -> persona upgrader -> status report)
+./scripts/run_loop.sh                     # Live run
+./scripts/run_loop.sh --dry-run           # No API calls or patches
+
+# Individual tools
+python scripts/loop_status.py             # Report loop health and counts
+python scripts/persona_upgrader.py        # Generate patches from pending recommendations
+python scripts/persona_upgrader.py --dry-run --persona sky-lynx  # Dry-run single persona
+
+# Human-in-the-loop patch review
+python scripts/review_patch.py list       # List pending patches
+python scripts/review_patch.py show PATCH_ID   # Show patch details
+python scripts/review_patch.py apply PATCH_ID  # Apply patch to Academy repo
+python scripts/review_patch.py reject PATCH_ID # Reject patch
 ```
 
-## Data Files
+### Visualization API (FastAPI)
 
-All data is stored in `data/` as append-only JSONL files (git-tracked):
-- `outcome_records.jsonl`
-- `improvement_recommendations.jsonl`
-- `persona_patches.jsonl`
+```bash
+source .venv/bin/activate
+uvicorn api.main:app --reload --port 8000
+```
 
-SQLite (`data/persona_metrics.db`) serves as a query layer, rebuildable from JSONL.
+**Endpoints** (all under `/api/v1/`):
 
-## Scripts
+| Route | Description |
+|-------|-------------|
+| `GET /api/v1/health` | Health check (ContractStore, Academy, UM status) |
+| `GET /api/v1/ecosystem` | Full ecosystem snapshot (nodes, edges, metrics) |
+| `GET /api/v1/nodes/{node_id}` | Node detail with metrics and recent records |
+| `GET /api/v1/agents` | List all persona agents from Academy |
+| `GET /api/v1/agents/{agent_id}` | Persona detail (identity, voice, frameworks) |
+| `GET /api/v1/pipeline` | Idea pipeline status from Ultra Magnus |
+| `GET /api/v1/pipeline/{idea_id}` | Idea detail with stage history |
+| `GET /api/v1/activity` | Activity feed (recent records across all contract types) |
+| `GET /api/v1/research/signals` | Research signal list with filtering |
 
-- `scripts/persona_upgrader.py` - Generate persona patches from recommendations
-- `scripts/loop_status.py` - Report feedback loop status
-- `scripts/run_loop.sh` - Orchestrate the full feedback cycle
+**Environment variables**:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SNOW_TOWN_DATA_DIR` | `~/projects/st-factory/data` | ContractStore data directory |
+| `ACADEMY_PERSONAS_DIR` | `~/projects/agent-persona-academy/personas` | Academy persona YAML directory |
+| `UM_DB_PATH` | `~/incoming/caught_ideas.db` | Ultra Magnus database path |
+
+### Dashboard (Next.js 14)
+
+```bash
+cd dashboard
+npm install
+npm run dev    # http://localhost:3000
+```
+
+**Pages**:
+- `/` — Home: health banner, node status cards, activity feed
+- `/ecosystem` — 3D ecosystem view (React Three Fiber): nodes as platonic solids, bezier edges, growth tiers
+- `/agents` — Agent card grid with category badges
+- `/agents/[agentId]` — Persona detail (identity, voice, frameworks, case studies)
+- `/pipeline` — Pipeline funnel with stage/status badges, scores, filters
+- `/pipeline/[ideaId]` — Idea detail view
+- `/nodes/[nodeId]` — Node detail with metrics breakdown
+
+## Cron / Automation
+
+Weekly feedback loop (Sundays 2 AM) via `/etc/cron.d/st-factory`:
+
+```
+0 2 * * 0 ubuntu /home/ubuntu/projects/st-factory/scripts/run_loop.sh >> /var/log/st-factory/loop.log 2>&1
+```
+
+Logrotate configured at `cron/logrotate-st-factory`.
+
+**Note**: Cron paths reference `/home/ubuntu/` from the previous EC2 instance. Update to `/home/apexaipc/` for local operation, or use Metroplex's systemd service for autonomous patch application instead.
+
+## Project Structure
+
+```
+st-factory/
+├── contracts/                      # Pydantic v2 data contracts
+│   ├── outcome_record.py           # UM -> SL
+│   ├── improvement_recommendation.py  # SL -> Academy
+│   ├── persona_upgrade_patch.py    # Academy -> UM
+│   ├── research_signal.py          # Research Agents -> IdeaForge
+│   └── store.py                    # Dual-write JSONL + SQLite store
+├── schemas/                        # JSON Schema exports (v1)
+├── api/                            # FastAPI visualization backend
+│   ├── main.py                     # App entry point (CORS, lifespan, health)
+│   ├── deps.py                     # Singleton data sources (store, academy, UM)
+│   ├── models/responses.py         # Pydantic response models
+│   ├── readers/                    # Academy YAML reader, UM SQLite reader
+│   └── routers/                    # 6 routers (ecosystem, nodes, agents, pipeline, activity, research)
+├── dashboard/                      # Next.js 14 + React Three Fiber
+│   └── src/
+│       ├── app/                    # App Router pages
+│       ├── components/             # UI components (ecosystem 3D, agents, pipeline, layout)
+│       ├── hooks/                  # SWR data hooks
+│       └── lib/                    # API client, types, growth tier system
+├── scripts/
+│   ├── run_loop.sh                 # Full feedback loop orchestrator
+│   ├── loop_status.py              # Loop health reporter
+│   ├── persona_upgrader.py         # Claude-powered patch generation
+│   └── review_patch.py             # HIL patch review tool
+├── cron/                           # Cron + logrotate configs
+├── data/                           # JSONL (git-tracked) + SQLite (git-ignored)
+│   ├── outcome_records.jsonl
+│   ├── improvement_recommendations.jsonl
+│   ├── persona_patches.jsonl
+│   └── persona_metrics.db          # SQLite query layer
+├── tests/
+│   ├── test_contracts/             # 5 test modules (contracts + store)
+│   └── test_api/                   # 4 test modules (routers)
+├── pyproject.toml                  # Package config (snow-town 0.1.0)
+├── BLUEPRINT.md                    # Phase tracker (Phases 0-9)
+├── CLAUDE.md                       # Claude Code instructions
+└── decisions.log                   # Historical decisions log
+```
+
+## Testing
+
+```bash
+source .venv/bin/activate
+pytest tests/                              # All tests
+pytest tests/test_contracts/ -v            # Contract + store tests
+pytest tests/test_api/ -v                  # API router tests (requires API deps)
+```
+
+## Key Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| JSONL as source of truth | Append-only, git-tracked, human-readable, survives SQLite corruption |
+| SQLite as query layer | Rebuildable from JSONL; status updates written here only |
+| Contracts defined here, imported by layers | Single source of truth for inter-system schemas |
+| Weekly cadence | Matches Sky-Lynx's existing cron schedule |
+| HIL patch review | `review_patch.py` — human approves/rejects before Academy changes |
+
+## Related Projects
+
+| Project | Relationship |
+|---------|-------------|
+| **Metroplex** | Reads `persona_metrics.db` (patches table) via `?mode=ro` for Gate 3 auto-apply |
+| **Sky-Lynx** | Writes `ImprovementRecommendation` records; reads outcomes + signals |
+| **Ultra Magnus** | Writes `OutcomeRecord` on terminal pipeline states |
+| **Research Agents** | Write `ResearchSignal` records (Perplexity/Gemini/ChatGPT daily) |
+| **Agent Persona Academy** | Target of persona patches (YAML files) |
+
+## License
+
+Proprietary - ST Metro Ecosystem
