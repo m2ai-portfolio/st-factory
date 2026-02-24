@@ -191,6 +191,7 @@ Human sets strategy, priorities, and constraints. Does not write or review code.
 | 9c | Agent dispatch — route tasks to YCE Harness, Data, or Chad | TBD |
 | 9d | Progress tracking — monitor agent output, update Linear, report to Data | TBD |
 | 9e | Overnight mode — continuous operation with configurable schedule windows | TBD |
+| 9f | Agent-to-agent handoff — enable Claude Code sessions to dispatch tasks to Data (ClaudeClaw) directly via n8n workflow or Telegram API, eliminating human relay for task handoffs. Currently Perceptor context is async and requires manual load. | TBD |
 
 **Exit criteria**: Metroplex pulls a scored idea from Ultra-Magnus, dispatches it to YCE Harness, code lands on a feature branch, status reported to Telegram. No human touched it.
 
