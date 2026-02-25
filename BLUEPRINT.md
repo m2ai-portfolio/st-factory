@@ -139,15 +139,16 @@ VR placeholder files removed. @react-three/xr removed from deps. Revisit when Qu
 - [ ] VRNodeInteractor (controller-based detail panels)
 
 ### Phase 9: A2A Protocol Integration (Future)
-- [ ] Evaluate A2A spec against Snow Town's agent communication needs
-- [ ] Define Agent Cards for Snow Town agents (UM, SL, persona_upgrader)
+- [ ] Evaluate A2A spec against ST Metro agent communication needs
+- [ ] Define Agent Cards for ecosystem agents (Metroplex, YCE Harness, Sky-Lynx, ClaudeClaw)
 - [ ] Expose ContractStore operations as A2A task endpoints (via FastAPI)
-- [ ] Integrate Chad (OpenClaw) as first external A2A peer agent
-- [ ] Bidirectional task delegation (Chad <-> ST)
+- [ ] ClaudeClaw (Data) as first A2A peer -- ops task delegation
+- [ ] Metroplex as A2A coordinator -- dispatch tasks to any A2A-compliant agent
 - [ ] Agent discovery via `.well-known/agent.json`
+- [ ] Bidirectional task delegation between future agents
 
-**Prerequisite**: Stable end-to-end loop (Phase 8), Chad's reasoning loop mature enough to delegate/receive tasks.
-**Rationale**: Chad runs its own model — MCP (tool-augmented) doesn't fit peer-to-peer coordination. A2A provides model-agnostic, framework-agnostic agent interop.
+**Prerequisite**: Stable end-to-end loop (Phase 8 -- DONE), Metroplex Priority Queue operational (ST Metro Phase 9).
+**Rationale**: As more agents are added to the ecosystem, A2A provides model-agnostic, framework-agnostic agent interop. MCP handles tool augmentation; A2A handles peer-to-peer coordination between independent agents.
 
 #### Phase 7i: Polish & Documentation
 - [x] Update .gitignore for dashboard artifacts
