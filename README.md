@@ -6,24 +6,24 @@ Closed-loop learning ecosystem for the ST Metro pipeline. Connects three autonom
 
 ```
 Ultra Magnus (idea pipeline)
-    │
-    └── OutcomeRecord ──> Snow-Town ContractStore (JSONL + SQLite)
-                                │
-                                v
-                          Sky-Lynx (weekly analysis)
-                                │
-                                └── ImprovementRecommendation ──> ContractStore
-                                                                       │
-                                                                       v
-                                                                persona_upgrader.py
-                                                                       │
-                                                                       └── PersonaUpgradePatch ──> ContractStore
-                                                                                                       │
-                                                                                                       v
-                                                                                            Agent Persona Academy
-                                                                                            (YAML persona files)
-                                                                                                       │
-                                                                                                       └──> Ultra Magnus (upgraded personas)
+    |
+    +-- OutcomeRecord --> ST Factory ContractStore (JSONL + SQLite)
+                               |
+                               v
+                         Sky-Lynx (weekly analysis)
+                               |
+                               +-- ImprovementRecommendation --> ContractStore
+                                                                      |
+                                                                      v
+                                                               persona_upgrader.py
+                                                                      |
+                                                                      +-- PersonaUpgradePatch --> ContractStore
+                                                                                                      |
+                                                                                                      v
+                                                                                           Agent Persona Academy
+                                                                                           (YAML persona files)
+                                                                                                      |
+                                                                                                      +--> Ultra Magnus (upgraded personas)
 ```
 
 **External readers**: Metroplex reads `persona_metrics.db` via `?mode=ro` to source patches for Gate 3 (patcher). Sky-Lynx reads JSONL + SQLite for weekly analysis.
@@ -138,12 +138,12 @@ npm run dev    # http://localhost:3000
 Weekly feedback loop (Sundays 2 AM) via `/etc/cron.d/st-factory`:
 
 ```
-0 2 * * 0 ubuntu /home/ubuntu/projects/st-factory/scripts/run_loop.sh >> /var/log/st-factory/loop.log 2>&1
+0 2 * * 0 apexaipc /home/apexaipc/projects/st-factory/scripts/run_loop.sh >> /var/log/st-factory/loop.log 2>&1
 ```
 
 Logrotate configured at `cron/logrotate-st-factory`.
 
-**Note**: Cron paths reference `/home/ubuntu/` from the previous EC2 instance. Update to `/home/apexaipc/` for local operation, or use Metroplex's systemd service for autonomous patch application instead.
+**Note**: With Metroplex operational, autonomous patch application is handled by Metroplex Gate 3 (systemd service). The cron job above runs the Sky-Lynx analysis and patch generation loop independently.
 
 ## Project Structure
 
@@ -178,6 +178,7 @@ st-factory/
 │   ├── outcome_records.jsonl
 │   ├── improvement_recommendations.jsonl
 │   ├── persona_patches.jsonl
+│   ├── research_signals.jsonl
 │   └── persona_metrics.db          # SQLite query layer
 ├── tests/
 │   ├── test_contracts/             # 5 test modules (contracts + store)
